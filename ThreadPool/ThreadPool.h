@@ -6,6 +6,7 @@
 #include<condition_variable>
 #include<mutex>
 #include<future>
+#include<type_traits>
 
 using namespace std;
 
@@ -24,15 +25,16 @@ public:
     ThreadPool(size_t s);
     ~ThreadPool();
     
-    template <typename T>
-    std::future<int> enqueue(T&& t,int n){
-        auto task = make_shared<packaged_task<int()>>(
-            [func = forward<T>(t), n]() mutable{
-                return func(n);
+    template <typename T, typename... Args >
+    auto enqueue(T&& t,Args&&... arg) -> std::future<typename std::invoke_result<T,Args...>::type>{
+        using ReturnType = typename std::invoke_result<T,Args...>::type;
+        auto task = make_shared<packaged_task<ReturnType()>>(
+            [func = forward<T>(t), ... captured_arg = forward<Args>(arg)]() mutable{
+                return func(move(captured_arg)...);
             }
         );
 
-        future<int> fut = task -> get_future();
+        future<ReturnType> fut = task -> get_future();
         {
             unique_lock<mutex> lock(queueMutex);
             tasks.emplace([task]() {

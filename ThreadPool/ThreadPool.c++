@@ -47,7 +47,16 @@ int main(){
         return n*n;
     },10); //sending lambda
     auto f2 = pool.enqueue(square,20); //sending function
+    auto f3 = pool.enqueue([](int a, int b){
+        return a+b;
+    }, 5, 15); //sending lambda with multiple arguments
+
+    auto f4 = pool.enqueue([]{
+        cout<<"Just printing something from a thread!"<<endl;
+    });// sending lambda with no arguments
     std::cout << "f1 result: " << f1.get() << std::endl;
     std::cout << "f2 result: " << f2.get() << std::endl;
+    std::cout << "f3 result: " << f3.get() << std::endl;
+    f4.get(); // no return value, just executing the lambda
     return 0;
 }
